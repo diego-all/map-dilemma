@@ -9,7 +9,6 @@ import (
 )
 
 func main() {
-
 	configFile := "inputs/classes.json" // Ruta al archivo JSON
 	class, classMetadata, err := readConfigMetadata(configFile)
 	if err != nil {
@@ -17,27 +16,14 @@ func main() {
 		os.Exit(1)
 	}
 	fmt.Printf("Configuración leída: %+v\n %+v\n", class, classMetadata)
-
-	// class, classMetadata, err := readConfigMetadata(configFile)
-	// if err != nil {
-	// 	fmt.Printf("Error leyendo el archivo de configuración: %s\n", err)
-	// 	fmt.Println("la clase es:", class)
-	// 	os.Exit(1)
-	// }
-	// fmt.Printf("Configuración leída: %+v\n %+v\n", class, classMetadata)
 }
 
-// func readConfigMetadata(configFile string) (string, map[string]string, [][]string, error) {
-
-func readConfigMetadata(configFile string) (string, map[string]string, error) {
-
+func readConfigMetadata(configFile string) (string, [][]string, error) {
 	jsonData, err := os.Open(configFile)
 	if err != nil {
 		return "", nil, err
 	}
 	defer jsonData.Close()
-
-	// fmt.Println("JSONDATA ES:", jsonData)
 
 	bytes, err := ioutil.ReadAll(jsonData)
 	if err != nil {
@@ -49,32 +35,50 @@ func readConfigMetadata(configFile string) (string, map[string]string, error) {
 		return "", nil, err
 	}
 
-	// PROVISIONAL [Solo 1 Tipo del JSON]
-	mapAtributos := make(map[string]string)
-	var Class string // Declaración de la variable Class
+	var class string
+	var classMetadata [][]string
 
 	// Iterar sobre cada tipo y sus atributos
 	for _, tipo := range tipos {
-		Class = tipo.Tipo
+		class = tipo.Tipo
 		fmt.Println("Clase:", tipo.Tipo)
 		fmt.Println("Atributos:")
-		for nombreAtributo, atributo := range tipo.Atributos {
 
-			fmt.Printf(" - %s: %s\n", nombreAtributo, atributo.TipoDato)
-
-			// PROVISIONAL [Solo 1 Tipo del JSON]
-			mapAtributos[nombreAtributo] = atributo.TipoDato
+		// Slice temporal para mantener el orden de los atributos
+		var atributosOrdenados []struct {
+			Key   string
+			Value string
 		}
 
-		// PROVISIONAL [Solo 1 Tipo del JSON]
-		oneType := true
-		if oneType == true {
-			break
+		// Decodificar los atributos manteniendo el orden
+		rawMessage := json.RawMessage{}
+		json.Unmarshal(bytes, &rawMessage)
+
+		var tmp []map[string]json.RawMessage
+		json.Unmarshal(rawMessage, &tmp)
+
+		for _, t := range tmp {
+			var atributos map[string]json.RawMessage
+			json.Unmarshal(t["atributos"], &atributos)
+
+			for key, value := range atributos {
+				var atributo models.Atributo
+				json.Unmarshal(value, &atributo)
+				atributosOrdenados = append(atributosOrdenados, struct {
+					Key   string
+					Value string
+				}{Key: key, Value: atributo.TipoDato})
+			}
 		}
+
+		for _, atributo := range atributosOrdenados {
+			fmt.Printf(" - %s: %s\n", atributo.Key, atributo.Value)
+			classMetadata = append(classMetadata, []string{atributo.Key, atributo.Value})
+		}
+
+		// Solo procesar el primer tipo en el JSON
+		break
 	}
 
-	// PROVISIONAL [Solo 1 Tipo del JSON]
-	fmt.Println("mapAtributos es: ", mapAtributos)
-
-	return Class, mapAtributos, nil
+	return class, classMetadata, nil
 }
