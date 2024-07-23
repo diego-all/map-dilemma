@@ -8,3 +8,10 @@ La lectura del JSON y el orden de los elementos depende del parser que estés ut
 En Go, por ejemplo, al utilizar la biblioteca estándar encoding/json, los mapas (map[string]interface{}) no mantienen el orden de inserción. Esto significa que, aunque el archivo JSON tenga un orden específico, al deserializarlo en Go no se garantiza que los campos se procesen en el mismo orden.
 
     https://github.com/json-iterator/go
+
+
+
+Desambiguar 
+lectura del JSON 
+procesamiento del JSON.
+
